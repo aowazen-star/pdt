@@ -1,0 +1,402 @@
+# lifeOS
+
+Your personal development tracker. Built to last decades.
+
+This is **v0.1**: the foundation. Auth, workout logging across 9 sport types, body metrics, and the scaffolding ready for the AI coach + Whoop integration.
+
+---
+
+## What's in here
+
+```
+src/
+├─ app.css                  # Design tokens & global styles
+├─ app.html                 # HTML shell, fonts
+├─ hooks.server.js          # Supabase server client + auth guard
+├─ lib/
+│  └─ sports.js             # Sport definitions (extend this to add sports)
+└─ routes/
+   ├─ +page.svelte          # Landing page
+   ├─ (auth)/
+   │   ├─ login/            # Sign in
+   │   └─ signup/           # Create account
+   ├─ (app)/                # Everything behind auth
+   │   ├─ dashboard/        # Today overview
+   │   ├─ workouts/         # List + new workout
+   │   ├─ metrics/          # Body metrics (weight, BF%, RHR, HRV)
+   │   ├─ goals/            # Stub — built in Stage 4
+   │   └─ coach/            # Stub — built in Stage 3
+   └─ auth/                 # OAuth callback endpoints
+```
+
+---
+
+## Deploy in 6 steps
+
+You don't need a terminal. Everything below happens in a browser.
+
+### 1 · Push this code to GitHub
+
+You have two options. **A** is easier if you're new to Git.
+
+**A. GitHub web upload**
+1. Go to **https://github.com/new** → name it `lifeos` → **Private** → **Create repository**.
+2. On the empty repo page, click **uploading an existing file**.
+3. Drag every file and folder from this project (except `node_modules/` if it exists — it shouldn't) into the upload area.
+4. Commit message: `initial scaffold` → **Commit changes**.
+
+**B. StackBlitz (recommended once set up — gives you live preview)**
+1. Go to **https://stackblitz.com** → sign in with GitHub.
+2. **New project → SvelteKit** (or import this zip via the UI).
+3. Drag-drop all files in. StackBlitz will install dependencies automatically.
+4. Click the **Connect Repository** button → choose `lifeos`. From now on, "Commit" pushes to GitHub.
+
+### 2 · Connect Netlify
+
+1. Go to **https://app.netlify.com** → **Add new site → Import an existing project → GitHub**.
+2. Pick the `lifeos` repo.
+3. Build settings should auto-fill (build command `npm run build`, publish directory `build`). If not, set them.
+4. **Do not deploy yet** — click "Add environment variables" first, or go to **Site settings → Environment variables** after the first failed deploy.
+
+### 3 · Set environment variables in Netlify
+
+Add these (Site settings → Environment variables → Add variable). Use the values from your Supabase, Whoop, and Anthropic accounts (the **rotated** ones).
+
+| Name | Value |
+|---|---|
+| `PUBLIC_SUPABASE_URL` | `https://quganjzukmadvblxhbjx.supabase.co` |
+| `PUBLIC_SUPABASE_ANON_KEY` | _your rotated anon key_ |
+| `PUBLIC_APP_URL` | _your Netlify URL, e.g. `https://lifeos-xyz.netlify.app`_ |
+| `ANTHROPIC_API_KEY` | _your rotated Anthropic key_ |
+| `WHOOP_CLIENT_ID` | `c5b5feda-1bcf-4e2e-b3d5-bc30cb2340e3` |
+| `WHOOP_CLIENT_SECRET` | _your rotated Whoop secret_ |
+
+> The first three are needed for v0.1 to work. The last three are needed in upcoming stages.
+
+After adding variables, click **Deploys → Trigger deploy → Deploy site**.
+
+### 4 · Configure Supabase to allow your Netlify URL
+
+1. In Supabase → **Authentication → URL Configuration**.
+2. **Site URL**: your Netlify URL (e.g. `https://lifeos-xyz.netlify.app`).
+3. **Redirect URLs**: add both your Netlify URL and `http://localhost:5173` (so you can run it locally later).
+4. Save.
+
+### 5 · Try it
+
+1. Visit your Netlify URL.
+2. Click **Get started**, create an account.
+3. Confirm via the email Supabase sends.
+4. Sign in → log a workout. You should see it appear on the dashboard.
+
+### 6 · Add the live URL to Whoop
+
+1. **https://developer.whoop.com** → your app → **Redirect URLs** → add `https://YOUR-NETLIFY-URL/auth/whoop/callback`.
+2. We'll wire this up in the next stage.
+
+---
+
+## What's next
+
+Once you confirm v0.1 works, come back and we'll build:
+
+- **Stage 2** — Workout charts, calendar view, PRs detection (small visual upgrades on what already exists)
+- **Stage 3** — Claude-powered weekly review (the AI coach reads your week and writes a debrief)
+- **Stage 4** — Whoop OAuth + nightly sync (recovery & HRV inform the coach)
+- **Stage 5** — Goals (outcome + process, with AI-suggested plans)
+- **Stage 6** — Diet & recipes
+- **Stage 7** — Calendar, tasks, life events
+- **Stage 8** — Cross-domain synthesis ("how did sleep affect my running pace this month?")
+
+---
+
+## Local development (optional, for later)
+
+If you ever want to run this on your own machine:
+
+1. Install Node.js LTS from **https://nodejs.org**.
+2. Open the project folder in VS Code.
+3. Open the terminal in VS Code (View → Terminal).
+4. Run `npm install` then `npm run dev`.
+5. Create a `.env` file in the project root with the same variables as Netlify.
+
+But for now: StackBlitz + Netlify means you never touch a terminal.
+
+# lifeOS
+
+Your personal development tracker. Built to last decades.
+
+This is **v0.1**: the foundation. Auth, workout logging across 9 sport types, body metrics, and the scaffolding ready for the AI coach + Whoop integration.
+
+---
+
+## What's in here
+
+```
+src/
+├─ app.css                  # Design tokens & global styles
+├─ app.html                 # HTML shell, fonts
+├─ hooks.server.js          # Supabase server client + auth guard
+├─ lib/
+│  └─ sports.js             # Sport definitions (extend this to add sports)
+└─ routes/
+   ├─ +page.svelte          # Landing page
+   ├─ (auth)/
+   │   ├─ login/            # Sign in
+   │   └─ signup/           # Create account
+   ├─ (app)/                # Everything behind auth
+   │   ├─ dashboard/        # Today overview
+   │   ├─ workouts/         # List + new workout
+   │   ├─ metrics/          # Body metrics (weight, BF%, RHR, HRV)
+   │   ├─ goals/            # Stub — built in Stage 4
+   │   └─ coach/            # Stub — built in Stage 3
+   └─ auth/                 # OAuth callback endpoints
+```
+
+---
+
+## Deploy in 6 steps
+
+You don't need a terminal. Everything below happens in a browser.
+
+### 1 · Push this code to GitHub
+
+You have two options. **A** is easier if you're new to Git.
+
+**A. GitHub web upload**
+1. Go to **https://github.com/new** → name it `lifeos` → **Private** → **Create repository**.
+2. On the empty repo page, click **uploading an existing file**.
+3. Drag every file and folder from this project (except `node_modules/` if it exists — it shouldn't) into the upload area.
+4. Commit message: `initial scaffold` → **Commit changes**.
+
+**B. StackBlitz (recommended once set up — gives you live preview)**
+1. Go to **https://stackblitz.com** → sign in with GitHub.
+2. **New project → SvelteKit** (or import this zip via the UI).
+3. Drag-drop all files in. StackBlitz will install dependencies automatically.
+4. Click the **Connect Repository** button → choose `lifeos`. From now on, "Commit" pushes to GitHub.
+
+### 2 · Connect Netlify
+
+1. Go to **https://app.netlify.com** → **Add new site → Import an existing project → GitHub**.
+2. Pick the `lifeos` repo.
+3. Build settings should auto-fill (build command `npm run build`, publish directory `build`). If not, set them.
+4. **Do not deploy yet** — click "Add environment variables" first, or go to **Site settings → Environment variables** after the first failed deploy.
+
+### 3 · Set environment variables in Netlify
+
+Add these (Site settings → Environment variables → Add variable). Use the values from your Supabase, Whoop, and Anthropic accounts (the **rotated** ones).
+
+| Name | Value |
+|---|---|
+| `PUBLIC_SUPABASE_URL` | `https://quganjzukmadvblxhbjx.supabase.co` |
+| `PUBLIC_SUPABASE_ANON_KEY` | _your rotated anon key_ |
+| `PUBLIC_APP_URL` | _your Netlify URL, e.g. `https://lifeos-xyz.netlify.app`_ |
+| `ANTHROPIC_API_KEY` | _your rotated Anthropic key_ |
+| `WHOOP_CLIENT_ID` | `c5b5feda-1bcf-4e2e-b3d5-bc30cb2340e3` |
+| `WHOOP_CLIENT_SECRET` | _your rotated Whoop secret_ |
+
+> The first three are needed for v0.1 to work. The last three are needed in upcoming stages.
+
+After adding variables, click **Deploys → Trigger deploy → Deploy site**.
+
+### 4 · Configure Supabase to allow your Netlify URL
+
+1. In Supabase → **Authentication → URL Configuration**.
+2. **Site URL**: your Netlify URL (e.g. `https://lifeos-xyz.netlify.app`).
+3. **Redirect URLs**: add both your Netlify URL and `http://localhost:5173` (so you can run it locally later).
+4. Save.
+
+### 5 · Try it
+
+1. Visit your Netlify URL.
+2. Click **Get started**, create an account.
+3. Confirm via the email Supabase sends.
+4. Sign in → log a workout. You should see it appear on the dashboard.
+
+### 6 · Add the live URL to Whoop
+
+1. **https://developer.whoop.com** → your app → **Redirect URLs** → add `https://YOUR-NETLIFY-URL/auth/whoop/callback`.
+2. We'll wire this up in the next stage.
+
+---
+
+## What's next
+
+Once you confirm v0.1 works, come back and we'll build:
+
+- **Stage 2** — Workout charts, calendar view, PRs detection (small visual upgrades on what already exists)
+- **Stage 3** — Claude-powered weekly review (the AI coach reads your week and writes a debrief)
+- **Stage 4** — Whoop OAuth + nightly sync (recovery & HRV inform the coach)
+- **Stage 5** — Goals (outcome + process, with AI-suggested plans)
+- **Stage 6** — Diet & recipes
+- **Stage 7** — Calendar, tasks, life events
+- **Stage 8** — Cross-domain synthesis ("how did sleep affect my running pace this month?")
+
+---
+
+## Local development (optional, for later)
+
+If you ever want to run this on your own machine:
+
+1. Install Node.js LTS from **https://nodejs.org**.
+2. Open the project folder in VS Code.
+3. Open the terminal in VS Code (View → Terminal).
+4. Run `npm install` then `npm run dev`.
+5. Create a `.env` file in the project root with the same variables as Netlify.
+
+But for now: StackBlitz + Netlify means you never touch a terminal.
+
+# Copy these names into Netlify → Site settings → Environment variables.
+# Never put real values in this file. Never commit a .env with real values.
+
+PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Server-side secrets (never exposed to the browser):
+ANTHROPIC_API_KEY=sk-ant-...
+WHOOP_CLIENT_ID=your-whoop-client-id
+WHOOP_CLIENT_SECRET=your-whoop-client-secret
+
+# Set this to your deployed URL once Netlify gives you one.
+# For local dev, http://localhost:5173
+PUBLIC_APP_URL=http://localhost:5173
+
+# Copy these names into Netlify → Site settings → Environment variables.
+# Never put real values in this file. Never commit a .env with real values.
+
+PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Server-side secrets (never exposed to the browser):
+ANTHROPIC_API_KEY=sk-ant-...
+WHOOP_CLIENT_ID=your-whoop-client-id
+WHOOP_CLIENT_SECRET=your-whoop-client-secret
+
+# Set this to your deployed URL once Netlify gives you one.
+# For local dev, http://localhost:5173
+PUBLIC_APP_URL=http://localhost:5173
+
+node_modules/
+.svelte-kit/
+build/
+.netlify/
+.env
+.env.local
+.DS_Store
+*.log
+
+node_modules/
+.svelte-kit/
+build/
+.netlify/
+.env
+.env.local
+.DS_Store
+*.log
+
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[functions]
+  node_bundler = "esbuild"
+
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[functions]
+  node_bundler = "esbuild"
+
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [sveltekit()]
+});
+
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [sveltekit()]
+});
+
+import adapter from '@sveltejs/adapter-netlify';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+  preprocess: vitePreprocess(),
+  kit: {
+    adapter: adapter({
+      edge: false,
+      split: false
+    })
+  }
+};
+
+export default config;
+
+import adapter from '@sveltejs/adapter-netlify';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+  preprocess: vitePreprocess(),
+  kit: {
+    adapter: adapter({
+      edge: false,
+      split: false
+    })
+  }
+};
+
+export default config;
+
+{
+  "name": "lifeos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-netlify": "^4.3.5",
+    "@sveltejs/kit": "^2.8.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "svelte": "^5.1.0",
+    "vite": "^5.4.10"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.1",
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}
+
+{
+  "name": "lifeos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-netlify": "^4.3.5",
+    "@sveltejs/kit": "^2.8.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "svelte": "^5.1.0",
+    "vite": "^5.4.10"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.1",
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}
+full scaffold
