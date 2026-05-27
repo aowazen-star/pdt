@@ -1,0 +1,1784 @@
+# lifeOS
+
+Your personal development tracker. Built to last decades.
+
+This is **v0.1**: the foundation. Auth, workout logging across 9 sport types, body metrics, and the scaffolding ready for the AI coach + Whoop integration.
+<script><script><script><script>
+  let { form } = $props();import { fail, redirec<script>import { redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+export const POST = async ({ locals }) => {
+  await locals.supabase.auth.signOut();
+  throw redirect(303, '/');
+};
+
+export const GET = async ({ url, locals }) => {
+  const code = url.searchParams.get('code');
+  const next = url.searchParams.get('next') ?? '/dashboard';
+  if (code) {
+    const { error } = await locals.supabase.auth.exchangeCodeForSession(code);
+    if (!error) throw redirect(303, next);
+  }
+  throw redirect(303, '/login?error=auth_failed');
+};
+
+  let { form } = $props();import { fail, redirect } from '@sveltejs/kit';
+import { PUBLIC_APP_URL } from '$env/static/public';
+
+export const actions = {
+  default: async ({ request, locals, url }) => {
+    const data = await request.formData();
+    const email = String(data.get('email') ?? '').trim();
+    const password = String(data.get('password') ?? '');
+
+    if (!email || !password) return fail(400, { email, error: 'Email and password are required.' });
+    if (password.length < 8) return fail(400, { email, error: 'Use at least 8 characters.' });
+
+    const { error } = await locals.supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${PUBLIC_APP_URL || url.origin}/auth/callback` }
+    });
+    if (error) return fail(400, { email, error: error.message });
+    return { message: 'Check your email for a confirmation link, then come back and sign in.' };
+  }
+};
+
+</script>
+
+<svelte:head><title>Create account · lifeOS</title></svelte:head>
+
+<main class="auth-page">
+  <div class="auth-card surface-elevated">
+    <a class="brand mono" href="/">lifeOS</a>
+    <p class="eyebrow">Begin</p>
+    <h1 class="display">Make your<br/>first entry.</h1>
+    <p class="muted">A private account. Just for you.</p>
+
+    {#if form?.error}<div class="notice notice-error">{form.error}</div>{/if}
+    {#if form?.message}<div class="notice notice-success">{form.message}</div>{/if}
+
+    <form method="POST" class="stack">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required autocomplete="email" value={form?.email ?? ''} />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="new-password" minlength="8" />
+      </div>
+      <button class="btn btn-primary" type="submit">Create account</button>
+    </form>
+
+    <p class="muted small">Already have one? <a class="btn-link" href="/login">Sign in</a></p>
+  </div>
+</main>
+
+<style>
+  .auth-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: var(--s-5);
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    padding: var(--s-6);
+  }
+  .brand { font-size: 13px; letter-spacing: 0.12em; color: var(--ink-300); }
+  h1 { line-height: 1; }
+  .small { font-size: 0.9rem; }
+</style>
+t } from '@sveltejs/kit';
+
+export const actions = {
+  default: async ({ request, locals }) => {
+    const data = await request.formData();
+    const email = String(data.get('email') ?? '').trim();
+    const password = String(data.get('password') ?? '');
+    if (!email || !password) return fail(400, { email, error: 'Email and password are required.' });
+
+    const { error } = await locals.supabase.auth.signInWithPassword({ email, password });
+    if (error) return fail(400, { email, error: error.message });
+    throw redirect(303, '/dashboard');
+  }
+};
+
+</script>
+
+<svelte:head><title>Sign in · lifeOS</title></svelte:head>
+
+<main class="auth-page">
+  <div class="auth-card surface-elevated">
+    <a class="brand mono" href="/">lifeOS</a>
+    <p class="eyebrow">Continue</p>
+    <h1 class="display">Welcome back.</h1>
+
+    {#if form?.error}<div class="notice notice-error">{form.error}</div>{/if}
+
+    <form method="POST" class="stack">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required autocomplete="email" value={form?.email ?? ''} />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password" />
+      </div>
+      <button class="btn btn-primary" type="submit">Sign in</button>
+    </form>
+
+    <p class="muted small">New here? <a class="btn-link" href="/signup">Create an account</a></p>
+  </div>
+</main>
+
+<style>
+  .auth-page { min-height: 100vh; display: grid; place-items: center; padding: var(--s-5); }
+  .auth-card { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-6); }
+  .brand { font-size: 13px; letter-spacing: 0.12em; color: var(--ink-300); }
+  h1 { line-height: 1; }
+  .small { font-size: 0.9rem; }
+</style>
+
+  import { SPORTS, SPORT_LIST } from '$lib/sports.js';
+  let { form } = $props();import { fail, redi<svelte:head><title>Coach · lifeOS</title></svelte:head>
+<svelte:head><title>Goals · lifeOS</title></svelte:head>
+
+<header class="page-head">
+  <p class="eyebrow">Targets & habits</p>
+  <h1 class="display">Goals.</h1>
+</header>
+
+<div class="surface-elevated soon">
+  <p class="eyebrow">Stage 4</p>
+  <h2 class="display medium">Goal tracking is next.</h2>
+  <p class="muted">
+    Outcome goals (lose 1% body fat, sub-20 5k) and process goals (swim 3×/week, lift 4×/week).
+    Each carries a coaching plan that Claude refines after every weekly review.
+  </p>
+  <p class="muted small">
+    The database tables are already in place. Once we wire up the AI coach, this page comes alive
+    with goal cards, progress charts, and check-ins.
+  </p>
+</div>
+
+<style>
+  .page-head { margin-bottom: var(--s-5); }
+  .page-head h1 { line-height: 1; }
+  .soon { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-7); text-align: left; }
+  .medium { font-size: 2rem; line-height: 1; }
+  .small { font-size: 0.9rem; }
+</style>
+
+<header class="page-head">
+  <p class="eyebrow">AI-guided</p>
+  <h1 class="display">Your coach.</h1>
+</header>
+
+<div class="grid">
+  <div class="surface-elevated card">
+    <p class="eyebrow">Stage 3</p>
+    <h2 class="display medium">Weekly reviews</h2>
+    <p class="muted">
+      Every Monday, Claude reads everything you logged the week before — workouts, body metrics,
+      Whoop data — and writes you a review. What worked. What didn't. What to change.
+    </p>
+    <button class="btn btn-ghost" disabled>Generate first review · soon</button>
+  </div>
+
+  <div class="surface-elevated card">
+    <p class="eyebrow">Stage 4</p>
+    <h2 class="display medium">Whoop sync</h2>
+    <p class="muted">
+      Connect once. Recovery, HRV, strain, and sleep land in your database every morning, so the
+      coach sees both what you logged and what your body told you.
+    </p>
+    <button class="btn btn-ghost" disabled>Connect Whoop · soon</button>
+  </div>
+
+  <div class="surface-elevated card">
+    <p class="eyebrow">Stage 5+</p>
+    <h2 class="display medium">Chat with your data</h2>
+    <p class="muted">
+      "Compare my running pace this month to last." "What time of day do I lift heaviest?"
+      "Recipes for tonight given what I have and my macros." All grounded in your real numbers.
+    </p>
+    <button class="btn btn-ghost" disabled>Open chat · soon</button>
+  </div>
+</div>
+
+<style>
+  .page-head { margin-bottom: var(--s-5); }
+  .page-head h1 { line-height: 1; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--s-4);
+  }
+  .card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-6); }
+  .medium { font-size: 1.7rem; line-height: 1.05; }
+  button[disabled] { opacity: 0.5; cursor: not-allowed; }
+</style>
+rect } from '@sveltejs/kit';
+import { SPORTS } from '$lib/sports.js';
+
+export const actions = {
+  default: async ({ request, locals }) => {
+    const data = await request.formData();
+    const sport = String(data.get('sport') ?? '');
+    if (!SPORTS[sport]) return fail(400, { error: 'Pick a sport.' });
+
+    const started_at = String(data.get('started_at') ?? '');
+    if (!started_at) return fail(400, { error: 'Pick a date and time.' });
+
+    const duration_minutes = data.get('duration_minutes');
+    const perceived_effort = data.get('perceived_effort');
+    const notes = data.get('notes');
+
+    // Pull sport-specific metrics from the form by checking the sport's defined fields
+    const metrics = {};
+    for (const f of SPORTS[sport].fields) {
+      const v = data.get(`metrics.${f.key}`);
+      if (v !== null && v !== '') {
+        metrics[f.key] = f.type === 'number' ? Number(v) : String(v);
+      }
+    }
+
+    const { error } = await locals.supabase.from('workouts').insert({
+      user_id: locals.user.id,
+      sport,
+      started_at: new Date(started_at).toISOString(),
+      duration_minutes: duration_minutes ? Number(duration_minutes) : null,
+      perceived_effort: perceived_effort ? Number(perceived_effort) : null,
+      notes: notes ? String(notes) : null,
+      metrics
+    });
+    if (error) return fail(400, { error: error.message });
+    throw redirect(303, '/workouts');
+  }
+};
+
+
+  let sport = $state('running');
+  let sportCfg = $derived(SPORTS[sport]);
+
+  // Default datetime-local to "now"
+  function nowLocal() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  }
+  let startedAt = $state(nowLocal());
+</script>
+
+<svelte:head><title>New workout · lifeOS</title></svelte:head>
+
+<header class="page-head">
+  <p class="eyebrow">Log session</p>
+  <h1 class="display">A new entry.</h1>
+</header>
+
+{#if form?.error}<div class="notice notice-error">{form.error}</div>{/if}
+
+<form method="POST" class="form surface-elevated">
+  <section class="sport-picker">
+    <label class="picker-label">Sport</label>
+    <div class="picker-grid">
+      {#each SPORT_LIST as s}
+        <label class="sport-tile" class:selected={sport === s.key}>
+          <input type="radio" name="sport" value={s.key} bind:group={sport} />
+          <span class="g">{s.glyph}</span>
+          <span class="l">{s.label}</span>
+        </label>
+      {/each}
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="field">
+      <label for="started_at">When</label>
+      <input id="started_at" name="started_at" type="datetime-local" bind:value={startedAt} required />
+    </div>
+    <div class="field">
+      <label for="duration_minutes">Duration (min)</label>
+      <input id="duration_minutes" name="duration_minutes" type="number" min="1" placeholder="45" />
+    </div>
+    <div class="field">
+      <label for="perceived_effort">RPE (1–10)</label>
+      <input id="perceived_effort" name="perceived_effort" type="number" min="1" max="10" placeholder="7" />
+    </div>
+  </section>
+
+  {#if sportCfg.fields.length > 0}
+    <section class="sport-fields">
+      <p class="eyebrow section-label">{sportCfg.label} details</p>
+      <div class="grid-2">
+        {#each sportCfg.fields as f}
+          <div class="field" class:wide={f.type === 'textarea'}>
+            <label for={`m_${f.key}`}>{f.label}</label>
+            {#if f.type === 'select'}
+              <select id={`m_${f.key}`} name={`metrics.${f.key}`}>
+                <option value="">—</option>
+                {#each f.options as o}<option value={o}>{o}</option>{/each}
+              </select>
+            {:else if f.type === 'textarea'}
+              <textarea id={`m_${f.key}`} name={`metrics.${f.key}`} rows="4" placeholder={f.placeholder ?? ''}></textarea>
+            {:else}
+              <input
+                id={`m_${f.key}`}
+                name={`metrics.${f.key}`}
+                type={f.type}
+                step={f.step}
+                min={f.min}
+                max={f.max}
+                placeholder={f.placeholder ?? ''}
+              />
+            {/if}
+          </div>
+        {/each}
+      </div>
+    </section>
+  {/if}
+
+  <section class="field">
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" rows="3" placeholder="How did it feel? What did you notice?"></textarea>
+  </section>
+
+  <footer class="actions">
+    <a class="btn btn-ghost" href="/workouts">Cancel</a>
+    <button class="btn btn-primary" type="submit">Save workout</button>
+  </footer>
+</form>
+
+<style>
+  .page-head { margin-bottom: var(--s-5); }
+  .page-head h1 { line-height: 1; }
+
+  .form { display: flex; flex-direction: column; gap: var(--s-6); }
+
+  .picker-label, .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-300);
+    display: block;
+    margin-bottom: var(--s-3);
+  }
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: var(--s-2);
+  }
+  .sport-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--s-3);
+    border: 1px solid var(--ink-500);
+    background: var(--ink-700);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .sport-tile:hover { border-color: var(--ink-400); }
+  .sport-tile.selected {
+    border-color: var(--amber);
+    background: rgba(212, 160, 92, 0.08);
+  }
+  .sport-tile input { display: none; }
+  .sport-tile .g { font-size: 1.5rem; color: var(--amber); }
+  .sport-tile .l { font-size: 0.85rem; color: var(--ink-100); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--s-4);
+  }
+  .field.wide { grid-column: 1 / -1; }
+
+  .actions { display: flex; justify-content: flex-end; gap: var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--ink-500); }
+</style>
+
+  import { page } from '$app/stores';export const load export const load = async ({ locals }) => {
+  const sevenDaysAgo = new Date(Date.now() - 7<script>export const load = async ({ locals, url }) => {
+  const sport = url.searchParams.get('sport');
+  let query = locals.supabase
+    .from('workouts')
+    .select('*')
+    .eq('user_id', locals.user.id)
+    .order('started_at', { ascending: false })
+    .limit(100);
+  if (sport) query = query.eq('sport', sport);
+  const { data: workouts } = await query;
+  return { workouts: workouts ?? [], sportFilter: sport };
+};
+
+  import { SPORTS, SPORT_LIST } from '$lib/sports.js';
+  let { data } = $props();
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function fmtMetric(key, value) {
+    if (value === null || value === undefined || value === '') return null;
+    return `${key}: ${value}`;
+  }
+</script>
+
+<svelte:head><title>Workouts · lifeOS</title></svelte:head>
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow">All sessions</p>
+    <h1 class="display">Workouts</h1>
+  </div>
+  <a class="btn btn-primary" href="/workouts/new">+ New workout</a>
+</header>
+
+<div class="chips">
+  <a class="chip" class:active={!data.sportFilter} href="/workouts">All</a>
+  {#each SPORT_LIST as s}
+    <a class="chip" class:active={data.sportFilter === s.key} href="/workouts?sport={s.key}">
+      <span class="g">{s.glyph}</span> {s.label}
+    </a>
+  {/each}
+</div>
+
+{#if data.workouts.length === 0}
+  <div class="surface empty">
+    <p class="muted">{data.sportFilter ? `No ${data.sportFilter} sessions yet.` : 'Nothing logged yet.'}</p>
+    <a class="btn btn-primary" href="/workouts/new">Log your first →</a>
+  </div>
+{:else}
+  <ul class="list">
+    {#each data.workouts as w}
+      {@const cfg = SPORTS[w.sport] ?? SPORTS.other}
+      {@const entries = Object.entries(w.metrics ?? {}).filter(([_, v]) => v !== null && v !== '' && v !== undefined)}
+      <li class="surface item">
+        <header class="item-head">
+          <div class="row">
+            <span class="glyph">{cfg.glyph}</span>
+            <div>
+              <h3>{cfg.label}</h3>
+              <p class="muted small">{fmtDate(w.started_at)}</p>
+            </div>
+          </div>
+          <div class="numbers mono">
+            {#if w.duration_minutes}<span class="tabular">{w.duration_minutes} min</span>{/if}
+            {#if w.perceived_effort}<span class="rpe">RPE {w.perceived_effort}/10</span>{/if}
+          </div>
+        </header>
+        {#if entries.length > 0}
+          <dl class="metrics">
+            {#each entries as [k, v]}
+              <div><dt>{k.replace(/_/g, ' ')}</dt><dd class="mono tabular">{v}</dd></div>
+            {/each}
+          </dl>
+        {/if}
+        {#if w.notes}<p class="notes muted">{w.notes}</p>{/if}
+      </li>
+    {/each}
+  </ul>
+{/if}
+
+<style>
+  .page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s-4); margin-bottom: var(--s-5); flex-wrap: wrap; }
+  .page-head h1 { line-height: 1; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-6); }
+  .chip {
+    padding: 6px 14px;
+    border: 1px solid var(--ink-500);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    color: var(--ink-200);
+    background: var(--ink-700);
+    transition: all 0.15s ease;
+  }
+  .chip:hover { border-color: var(--ink-400); color: var(--ink-50); }
+  .chip.active { background: var(--amber); color: var(--ink-900); border-color: var(--amber); }
+  .chip .g { margin-right: 4px; }
+
+  .empty { text-align: center; padding: var(--s-7); display: flex; flex-direction: column; gap: var(--s-4); align-items: center; }
+
+  .list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+  .item { display: flex; flex-direction: column; gap: var(--s-3); }
+  .item-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-3); }
+  .row { display: flex; gap: var(--s-3); align-items: center; }
+  .glyph {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ink-600);
+    color: var(--amber);
+    border: 1px solid var(--ink-500);
+    font-size: 1.4rem;
+  }
+  h3 { color: var(--ink-50); }
+  .small { font-size: 0.85rem; }
+  .numbers { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .rpe { font-size: 0.85rem; color: var(--ink-300); }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--s-3);
+    padding: var(--s-3) 0 0;
+    border-top: 1px dashed var(--ink-500);
+    margin: 0;
+  }
+  .metrics div { display: flex; flex-direction: column; gap: 2px; }
+  .metrics dt { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-300); font-family: var(--font-mono); }
+  .metrics dd { margin: 0; color: var(--ink-50); }
+
+  .notes { font-style: italic; padding-top: var(--s-2); border-top: 1px dashed var(--ink-500); }
+</style>
+ * 24 * 60<script>import { fail } from '@sveltejs/kit';
+
+export const load = async ({ locals }) => {
+  const { data: metrics } = await locals.supabase
+    .from('body_metrics')
+    .select('*')
+    .eq('user_id', locals.user.id)
+    .order('measured_at', { ascending: false })
+    .limit(60);
+  return { metrics: metrics ?? [] };
+};
+
+export const actions = {
+  default: async ({ request, locals }) => {
+    const fd = await request.formData();
+    const measured_at = String(fd.get('measured_at') ?? new Date().toISOString());
+    const num = (k) => {
+      const v = fd.get(k);
+      return v === null || v === '' ? null : Number(v);
+    };
+    const row = {
+      user_id: locals.user.id,
+      measured_at: new Date(measured_at).toISOString(),
+      weight_kg: num('weight_kg'),
+      body_fat_pct: num('body_fat_pct'),
+      resting_hr: num('resting_hr'),
+      hrv_ms: num('hrv_ms'),
+      measurements: {}
+    };
+    const { error } = await locals.supabase.from('body_metrics').insert(row);
+    if (error) return fail(400, { error: error.message });
+    return { success: true };
+  }
+};
+
+  let { data, form } = $props();
+
+  function nowLocal() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  }
+  let measuredAt = $state(nowLocal());
+
+  function fmt(iso) {
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+</script>
+
+<svelte:head><title>Body · lifeOS</title></svelte:head>
+
+<header class="page-head">
+  <p class="eyebrow">Composition & resting</p>
+  <h1 class="display">Body.</h1>
+</header>
+
+<div class="layout">
+  <form method="POST" class="surface-elevated form">
+    <p class="eyebrow">New measurement</p>
+    {#if form?.error}<div class="notice notice-error">{form.error}</div>{/if}
+    {#if form?.success}<div class="notice notice-success">Recorded.</div>{/if}
+
+    <div class="field">
+      <label for="measured_at">When</label>
+      <input id="measured_at" name="measured_at" type="datetime-local" bind:value={measuredAt} required />
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="weight_kg">Weight (kg)</label>
+        <input id="weight_kg" name="weight_kg" type="number" step="0.1" placeholder="—" />
+      </div>
+      <div class="field">
+        <label for="body_fat_pct">Body fat (%)</label>
+        <input id="body_fat_pct" name="body_fat_pct" type="number" step="0.1" placeholder="—" />
+      </div>
+      <div class="field">
+        <label for="resting_hr">Resting HR</label>
+        <input id="resting_hr" name="resting_hr" type="number" placeholder="—" />
+      </div>
+      <div class="field">
+        <label for="hrv_ms">HRV (ms)</label>
+        <input id="hrv_ms" name="hrv_ms" type="number" placeholder="—" />
+      </div>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Record</button>
+  </form>
+
+  <section class="history">
+    <p class="eyebrow">History · last {data.metrics.length}</p>
+    {#if data.metrics.length === 0}
+      <div class="surface center muted">No measurements yet.</div>
+    {:else}
+      <div class="surface">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th class="num">Weight</th>
+              <th class="num">Body fat</th>
+              <th class="num">RHR</th>
+              <th class="num">HRV</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each data.metrics as m}
+              <tr>
+                <td>{fmt(m.measured_at)}</td>
+                <td class="num mono tabular">{m.weight_kg ?? '—'}</td>
+                <td class="num mono tabular">{m.body_fat_pct ?? '—'}</td>
+                <td class="num mono tabular">{m.resting_hr ?? '—'}</td>
+                <td class="num mono tabular">{m.hrv_ms ?? '—'}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
+  </section>
+</div>
+
+<style>
+  .page-head { margin-bottom: var(--s-5); }
+  .page-head h1 { line-height: 1; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: var(--s-5);
+  }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .form { display: flex; flex-direction: column; gap: var(--s-4); position: sticky; top: calc(var(--nav-height) + var(--s-4)); height: fit-content; }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-3);
+  }
+
+  .history { display: flex; flex-direction: column; gap: var(--s-3); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: var(--s-3) var(--s-3); border-bottom: 1px solid var(--ink-500); text-align: left; }
+  th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-300);
+    font-weight: 500;
+  }
+  th.num, td.num { text-align: right; }
+  tbody tr:last-child td { border-bottom: 0; }
+</style>
+ * 60 * 1000).toISOString();
+
+  const [{ data: recent }, { data: weeklyAll }, { data: bodyLatest }] = await Promise.all([
+    locals.supabase
+      .from('workouts')
+      .select('id, sport, started_at, duration_minutes, perceived_effort, notes')
+      .eq('user_id', locals.user.id)
+      .order('started_at', { ascending: false })
+      .limit(5),
+    locals.supabase
+      .from('workouts')
+      .select('sport, duration_minutes, started_at')
+      .eq('user_id', locals.user.id)
+      .gte('started_at', sevenDaysAgo),
+    locals.supabase
+      .from('body_metrics')
+      .select('*')
+      .eq('user_id', locals.user.id)
+      .order('measured_at', { ascending: false })
+      .limit(1)
+  ]);
+
+  const weekly = weeklyAll ?? [];
+  const totalMinutes = weekly.reduce((s, w) => s + (w.duration_minutes ?? 0), 0);
+  const bySport = weekly.reduce((acc, w) => {
+    acc[w.sport] = (acc[w.sport] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    recent: recent ?? [],
+    weekly: {
+      count: weekly.length,
+      totalMinutes,
+      bySport
+    },
+    latestBody: bodyLatest?.[0] ?? null
+  };
+};
+= async ({ locals }) => {
+  // hooks.server.js has already enforced auth<script>
+  import { SPORTS } from '$lib/sports.js';
+  let { data } = $props();
+
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: 'long', month: 'long', day: 'numeric'
+  });
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function fmtTime(iso) {
+    return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+</script>
+
+<svelte:head><title>Today · lifeOS</title></svelte:head>
+
+<section class="hero-block">
+  <p class="eyebrow">{today}</p>
+  <h1 class="display">
+    {#if data.weekly.count === 0}
+      A clean<br/>page.
+    {:else}
+      {data.weekly.count} session{data.weekly.count === 1 ? '' : 's'}<br/>
+      <em class="accent">this week.</em>
+    {/if}
+  </h1>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="/workouts/new">Log a workout</a>
+    <a class="btn btn-ghost" href="/metrics">Record body metrics</a>
+  </div>
+</section>
+
+<div class="grid">
+  <article class="surface stat-card">
+    <p class="eyebrow">Last 7 days</p>
+    <p class="big-num mono tabular">{data.weekly.totalMinutes}</p>
+    <p class="muted">minutes moved</p>
+  </article>
+
+  <article class="surface stat-card">
+    <p class="eyebrow">Sessions</p>
+    <p class="big-num mono tabular">{data.weekly.count}</p>
+    <p class="muted">across {Object.keys(data.weekly.bySport).length} sport{Object.keys(data.weekly.bySport).length === 1 ? '' : 's'}</p>
+  </article>
+
+  <article class="surface stat-card">
+    <p class="eyebrow">Body</p>
+    {#if data.latestBody}
+      <p class="big-num mono tabular">{data.latestBody.weight_kg ?? '—'}<span class="unit">kg</span></p>
+      <p class="muted">on {fmtDate(data.latestBody.measured_at)}</p>
+    {:else}
+      <p class="big-num mono">—</p>
+      <p class="muted">No measurements yet</p>
+    {/if}
+  </article>
+</div>
+
+<section class="block">
+  <div class="block-head">
+    <h2 class="display">Recent work</h2>
+    <a class="btn-link" href="/workouts">All workouts →</a>
+  </div>
+
+  {#if data.recent.length === 0}
+    <div class="surface empty">
+      <p class="muted">No workouts logged yet. <a class="btn-link" href="/workouts/new">Add your first →</a></p>
+    </div>
+  {:else}
+    <ul class="workout-list">
+      {#each data.recent as w}
+        {@const cfg = SPORTS[w.sport] ?? SPORTS.other}
+        <li class="surface workout-item">
+          <span class="glyph">{cfg.glyph}</span>
+          <div class="meat">
+            <div class="row1">
+              <span class="title">{cfg.label}</span>
+              <span class="muted small">· {fmtDate(w.started_at)} {fmtTime(w.started_at)}</span>
+            </div>
+            {#if w.notes}<p class="muted small notes">{w.notes}</p>{/if}
+          </div>
+          <div class="numbers mono">
+            {#if w.duration_minutes}<span class="tabular">{w.duration_minutes}<small>min</small></span>{/if}
+            {#if w.perceived_effort}<span class="tabular rpe">RPE {w.perceived_effort}</span>{/if}
+          </div>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+</section>
+
+<section class="block soon">
+  <h2 class="display small">Coming next</h2>
+  <div class="grid">
+    <a class="surface roadmap" href="/coach">
+      <span class="eyebrow">Stage 3</span>
+      <h3>AI coach — weekly reviews</h3>
+      <p class="muted small">Claude reads your data, spots patterns, writes a plan.</p>
+    </a>
+    <div class="surface roadmap">
+      <span class="eyebrow">Stage 4</span>
+      <h3>Whoop sync</h3>
+      <p class="muted small">Recovery, HRV, strain, sleep — pulled every morning.</p>
+    </div>
+    <div class="surface roadmap">
+      <span class="eyebrow">Stage 5</span>
+      <h3>Diet & recipes</h3>
+      <p class="muted small">Meals, macros, recipe library, AI suggestions from what you have.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-block { display: flex; flex-direction: column; gap: var(--s-4); margin-bottom: var(--s-7); }
+  .hero-block h1 { line-height: 1.0; }
+  .cta-row { display: flex; gap: var(--s-3); flex-wrap: wrap; margin-top: var(--s-2); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--s-4);
+    margin-bottom: var(--s-7);
+  }
+  .stat-card { display: flex; flex-direction: column; gap: var(--s-2); }
+  .big-num {
+    font-size: 3rem;
+    font-weight: 500;
+    color: var(--ink-50);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .big-num .unit { font-size: 1rem; color: var(--ink-300); margin-left: 4px; }
+
+  .block { margin-bottom: var(--s-7); }
+  .block-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--s-4);
+  }
+  .block .display.small { font-size: 1.8rem; margin-bottom: var(--s-4); }
+
+  .empty { text-align: center; padding: var(--s-6); }
+
+  .workout-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-3); }
+  .workout-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--s-4);
+    padding: var(--s-4) var(--s-5);
+  }
+  .glyph {
+    font-size: 1.5rem;
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ink-600);
+    color: var(--amber);
+    border: 1px solid var(--ink-500);
+  }
+  .meat .row1 { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .title { font-weight: 600; color: var(--ink-50); }
+  .small { font-size: 0.85rem; }
+  .notes { margin-top: 4px; font-style: italic; }
+  .numbers { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--ink-200); font-size: 0.95rem; }
+  .numbers small { font-size: 10px; color: var(--ink-300); margin-left: 3px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .numbers .rpe { font-size: 0.8rem; color: var(--ink-300); }
+
+  .roadmap { display: flex; flex-direction: column; gap: var(--s-2); }
+  .roadmap h3 { color: var(--ink-50); }
+  a.roadmap:hover { border-color: var(--amber-dim); }
+</style>
+
+  const { data: profile } = await locals.supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', locals.user.id)
+    .single();
+
+  return { profile };
+};
+
+  let { data, children } = $props();
+
+  const sections = [
+    { href: '/dashboard', label: 'Today' },
+    { href: '/workouts', label: 'Workouts' },
+    { href: '/metrics', label: 'Body' },
+    { href: '/goals', label: 'Goals' },
+    { href: '/coach', label: 'Coach' }
+  ];
+
+  let menuOpen = $state(false);
+
+  async function signOut() {
+    const f = new FormData();
+    await fetch('/auth/signout', { method: 'POST', body: f });
+    window.location.href = '/';
+  }
+</script>
+
+<header class="topnav">
+  <div class="container nav-row">
+    <a class="brand mono" href="/dashboard">lifeOS</a>
+    <nav class="primary" class:open={menuOpen}>
+      {#each sections as s}
+        <a
+          href={s.href}
+          class="nav-item"
+          class:active={$page.url.pathname.startsWith(s.href)}
+          onclick={() => (menuOpen = false)}
+        >{s.label}</a>
+      {/each}
+    </nav>
+    <div class="meta">
+      <span class="muted email">{data.user?.email ?? ''}</span>
+      <button class="btn-link" onclick={signOut}>Sign out</button>
+    </div>
+    <button class="hamburger" aria-label="Menu" onclick={() => (menuOpen = !menuOpen)}>≡</button>
+  </div>
+</header>
+
+<main class="app">
+  <div class="container">
+    {@render children()}
+  </div>
+</main>
+
+<style>
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(15, 13, 11, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--ink-500);
+  }
+  .nav-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    height: var(--nav-height);
+    gap: var(--s-5);
+  }
+  .brand { font-size: 13px; letter-spacing: 0.14em; color: var(--ink-50); }
+  .primary { display: flex; gap: var(--s-1); }
+  .nav-item {
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    border-radius: var(--r-md);
+    color: var(--ink-200);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .nav-item:hover { background: var(--ink-700); color: var(--ink-50); }
+  .nav-item.active {
+    background: var(--ink-700);
+    color: var(--ink-50);
+    box-shadow: inset 0 -2px 0 var(--amber);
+  }
+  .meta { display: flex; align-items: center; gap: var(--s-3); }
+  .email { font-size: 0.85rem; }
+  .hamburger { display: none; font-size: 1.5rem; padding: 8px 12px; }
+  .app { padding: var(--s-7) 0 var(--s-9); }
+
+  @media (max-width: 800px) {
+    .nav-row { grid-template-columns: auto 1fr auto; }
+    .meta { display: none; }
+    .hamburger { display: block; }
+    .primary {
+      position: absolute;
+      top: var(--nav-height);
+      left: 0; right: 0;
+      flex-direction: column;
+      background: var(--ink-700);
+      border-bottom: 1px solid var(--ink-500);
+      padding: var(--s-3);
+      transform: translateY(-110%);
+      transition: transform 0.2s ease;
+      gap: var(--s-1);
+    }
+    .primary.open { transform: translateY(0); }
+    .nav-item { padding: 12px var(--s-4); }
+  }
+</style>
+
+  import '../app.css';
+  let { children } = $props();
+</script>export const load = async ({ locals }) => {
+  const { session, user } = await locals.safeGetSession();
+  return { session, user };
+};
+
+
+<div class="grain"></div>
+{@render children()}
+
+<style>
+  :global(html, body) { background: var(--ink-800); }
+</style>
+
+---// Sport-specific metric definitions.<script>
+  let { data } = $props();
+</script>
+
+<svelte:head><title>lifeOS</title></svelte:head>
+
+<main class="hero">
+  <div class="container">
+    <header class="hero-head">
+      <span class="brand mono">lifeOS</span>
+      <nav>
+        {#if data.session}
+          <a class="btn btn-ghost" href="/dashboard">Open</a>
+        {:else}
+          <a class="btn-link" href="/login">Sign in</a>
+          <a class="btn btn-primary" href="/signup">Get started</a>
+        {/if}
+      </nav>
+    </header>
+
+    <section class="pitch">
+      <p class="eyebrow">A field notebook for your own life</p>
+      <h1 class="display">
+        Track every<br/>
+        rep, run, meal,<br/>
+        meeting & moment<br/>
+        <em class="accent">that compounds.</em>
+      </h1>
+      <p class="lede muted">
+        A private space, designed for one person.
+        Your fitness, your goals, your habits — coached
+        by an AI that actually knows your numbers.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="/signup">Begin →</a>
+        <a class="btn btn-ghost" href="/login">I already have an account</a>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span class="eyebrow">v0.1 · fitness foundation</span>
+      <span class="eyebrow">whoop · claude · supabase</span>
+    </footer>
+  </div>
+</main>
+
+<style>
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: stretch;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212, 160, 92, 0.12) 0%, transparent 60%);
+    top: -200px; right: -200px;
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(138, 163, 139, 0.08) 0%, transparent 60%);
+    bottom: -100px; left: -100px;
+    pointer-events: none;
+  }
+  .container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-8);
+    padding-top: var(--s-5);
+    padding-bottom: var(--s-5);
+    position: relative;
+    z-index: 2;
+  }
+  .hero-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    color: var(--ink-50);
+  }
+  .hero-head nav { display: flex; gap: var(--s-3); align-items: center; }
+  .pitch {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+    max-width: 720px;
+    margin-top: var(--s-7);
+  }
+  .pitch h1 em { font-style: italic; }
+  .lede { font-size: 1.15rem; max-width: 540px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-3); }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: var(--s-7);
+    border-top: 1px solid var(--ink-500);
+  }
+  @media (max-width: 600px) {
+    .foot { flex-direction: column; gap: var(--s-2); }
+  }
+</style>
+
+// Add more sports by adding entries here — no schema change needed.
+export const SPORTS = {
+  running: {
+    label: 'Running',
+    glyph: '↗',
+    fields: [
+      { key: 'distance_km', label: 'Distance (km)', type: 'number', step: 0.01 },
+      { key: 'avg_pace_min_per_km', label: 'Avg pace (min/km)', type: 'text', placeholder: '5:30' },
+      { key: 'elevation_gain_m', label: 'Elevation gain (m)', type: 'number' },
+      { key: 'hr_avg', label: 'Avg HR (bpm)', type: 'number' },
+      { key: 'hr_max', label: 'Max HR (bpm)', type: 'number' }
+    ]
+  },
+  swimming: {
+    label: 'Swimming',
+    glyph: '≈',
+    fields: [
+      { key: 'distance_m', label: 'Distance (m)', type: 'number' },
+      { key: 'stroke', label: 'Stroke', type: 'select', options: ['Freestyle', 'Backstroke', 'Breaststroke', 'Butterfly', 'Mixed'] },
+      { key: 'pool_length_m', label: 'Pool length (m)', type: 'number', placeholder: '25 or 50' },
+      { key: 'avg_pace_per_100m', label: 'Avg pace per 100m', type: 'text', placeholder: '1:45' }
+    ]
+  },
+  soccer: {
+    label: 'Soccer',
+    glyph: '○',
+    fields: [
+      { key: 'session_type', label: 'Session type', type: 'select', options: ['Match', 'Training', 'Friendly', 'Skills'] },
+      { key: 'position', label: 'Position', type: 'text', placeholder: 'CM, RB, etc.' },
+      { key: 'minutes_played', label: 'Minutes played', type: 'number' },
+      { key: 'goals', label: 'Goals', type: 'number' },
+      { key: 'assists', label: 'Assists', type: 'number' },
+      { key: 'subjective_performance', label: 'Self-rating (1–10)', type: 'number', min: 1, max: 10 }
+    ]
+  },
+  strength: {
+    label: 'Strength',
+    glyph: '▮',
+    fields: [
+      { key: 'focus', label: 'Focus', type: 'select', options: ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body', 'Olympic', 'Other'] },
+      { key: 'total_volume_kg', label: 'Total volume (kg)', type: 'number' },
+      { key: 'exercises_summary', label: 'Exercises (free text for now)', type: 'textarea',
+        placeholder: 'Bench: 60×5, 70×5, 80×5\nSquat: 100×3×5' }
+    ]
+  },
+  cycling: {
+    label: 'Cycling',
+    glyph: '◐',
+    fields: [
+      { key: 'distance_km', label: 'Distance (km)', type: 'number', step: 0.1 },
+      { key: 'elevation_gain_m', label: 'Elevation gain (m)', type: 'number' },
+      { key: 'avg_speed_kmh', label: 'Avg speed (km/h)', type: 'number', step: 0.1 },
+      { key: 'hr_avg', label: 'Avg HR (bpm)', type: 'number' }
+    ]
+  },
+  yoga: {
+    label: 'Yoga',
+    glyph: '✦',
+    fields: [
+      { key: 'style', label: 'Style', type: 'text', placeholder: 'Vinyasa, Yin, etc.' }
+    ]
+  },
+  mobility: {
+    label: 'Mobility',
+    glyph: '~',
+    fields: [
+      { key: 'focus_areas', label: 'Focus areas', type: 'text', placeholder: 'Hips, shoulders…' }
+    ]
+  },
+  hiking: {
+    label: 'Hiking',
+    glyph: '△',
+    fields: [
+      { key: 'distance_km', label: 'Distance (km)', type: 'number', step: 0.1 },
+      { key: 'elevation_gain_m', label: 'Elevation gain (m)', type: 'number' }
+    ]
+  },
+  other: {
+    label: 'Other',
+    glyph: '·',
+    fields: []
+  }
+};
+
+export const SPORT_LIST = Object.entries(SPORTS).map(([key, v]) => ({ key, ...v }));
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#13110F" />
+    <meta name="description" content="A personal development tracker." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=Manrope:wght@300..800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>
+
+## What's in hereimport { createServerClient } from '@supa/* ============================================================
+   lifeOS — Design Tokens
+   Warm editorial dark. Personal field-notebook meets dashboard.
+   ============================================================ */
+
+:root {
+  /* Palette — warm dark, not pure black */
+  --ink-900: #0F0D0B;    /* deepest bg */
+  --ink-800: #13110F;    /* page bg */
+  --ink-700: #1B1815;    /* surface */
+  --ink-600: #26221E;    /* elevated surface */
+  --ink-500: #3A342E;    /* borders */
+  --ink-400: #564E45;    /* muted strokes */
+  --ink-300: #847A6E;    /* secondary text */
+  --ink-200: #C9BFB1;    /* primary text muted */
+  --ink-100: #F2EDE4;    /* primary text */
+  --ink-50:  #FAF6EF;    /* highlight text */
+
+  --amber: #D4A05C;      /* primary accent */
+  --amber-dim: #A37A40;
+  --amber-bright: #F2C079;
+
+  --sage: #8AA38B;       /* success */
+  --rust: #C8765A;       /* warning */
+  --crimson: #B95945;    /* destructive */
+
+  /* Typography */
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Georgia', serif;
+  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Spacing scale (8px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+
+  /* Shadows — warm, subtle */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-lg: 0 24px 48px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+
+  /* Layout */
+  --max-width: 1100px;
+  --nav-height: 64px;
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-100);
+  background: var(--ink-800);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss01', 'cv11';
+}
+img, svg { display: block; max-width: 100%; }
+button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; padding: 0; }
+input, textarea, select { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+hr { border: 0; border-top: 1px solid var(--ink-500); margin: var(--s-5) 0; }
+
+/* ===== Typography ===== */
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 50, 'opsz' 80;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ink-50);
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+.mono { font-family: var(--font-mono); }
+
+h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+h3 { font-size: 1.25rem; }
+p { margin: 0; }
+
+/* ===== Layout primitives ===== */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--s-5);
+}
+.stack > * + * { margin-top: var(--s-4); }
+.stack-lg > * + * { margin-top: var(--s-6); }
+.row { display: flex; gap: var(--s-3); align-items: center; }
+
+/* ===== Surface ===== */
+.surface {
+  background: var(--ink-700);
+  border: 1px solid var(--ink-500);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+}
+.surface-elevated {
+  background: var(--ink-600);
+  border: 1px solid var(--ink-500);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--shadow-md);
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: 12px 20px;
+  border-radius: var(--r-md);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.005em;
+  transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--amber);
+  color: var(--ink-900);
+  border-color: var(--amber);
+}
+.btn-primary:hover { background: var(--amber-bright); border-color: var(--amber-bright); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-100);
+  border-color: var(--ink-500);
+}
+.btn-ghost:hover { background: var(--ink-600); border-color: var(--ink-400); }
+
+.btn-link {
+  background: transparent;
+  color: var(--amber);
+  padding: 4px 0;
+  text-decoration: underline;
+  text-decoration-color: var(--ink-500);
+  text-underline-offset: 4px;
+}
+.btn-link:hover { text-decoration-color: var(--amber); }
+
+/* ===== Forms ===== */
+.field { display: flex; flex-direction: column; gap: var(--s-2); }
+.field label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+.field input,
+.field textarea,
+.field select {
+  background: var(--ink-800);
+  border: 1px solid var(--ink-500);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  color: var(--ink-100);
+  font-size: 1rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--amber-dim);
+  background: var(--ink-700);
+}
+.field input::placeholder, .field textarea::placeholder { color: var(--ink-400); }
+
+/* ===== Notifications ===== */
+.notice {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--ink-500);
+  background: var(--ink-700);
+  font-size: 0.92rem;
+}
+.notice-error { border-color: rgba(185, 89, 69, 0.5); background: rgba(185, 89, 69, 0.12); color: #F0C4B8; }
+.notice-success { border-color: rgba(138, 163, 139, 0.5); background: rgba(138, 163, 139, 0.12); color: #C9DCCA; }
+
+/* ===== Utilities ===== */
+.muted { color: var(--ink-300); }
+.accent { color: var(--amber); }
+.tabular { font-variant-numeric: tabular-nums; }
+.center { text-align: center; }
+
+/* ===== Decorative texture ===== */
+.grain::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+base/ssr';
+import { redirect } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+
+const supabaseHandle = async ({ event, resolve }) => {
+  event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll: () => event.cookies.getAll(),
+      setAll: (cookiesToSet) => {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          event.cookies.set(name, value, { ...options, path: '/' });
+        });
+      }
+    }
+  });
+
+  // safeGetSession verifies the JWT, unlike getSession alone
+  event.locals.safeGetSession = async () => {
+    const { data: { session } } = await event.locals.supabase.auth.getSession();
+    if (!session) return { session: null, user: null };
+    const { data: { user }, error } = await event.locals.supabase.auth.getUser();
+    if (error) return { session: null, user: null };
+    return { session, user };
+  };
+
+  return resolve(event, {
+    filterSerializedResponseHeaders: (name) => name === 'content-range' || name === 'x-supabase-api-version'
+  });
+};
+
+const authGuard = async ({ event, resolve }) => {
+  const { session, user } = await event.locals.safeGetSession();
+  event.locals.session = session;
+  event.locals.user = user;
+
+  const path = event.url.pathname;
+  const isAppRoute = path.startsWith('/dashboard')
+    || path.startsWith('/workouts')
+    || path.startsWith('/metrics')
+    || path.startsWith('/goals')
+    || path.startsWith('/coach');
+  const isAuthRoute = path === '/login' || path === '/signup';
+
+  if (isAppRoute && !session) throw redirect(303, '/login');
+  if (isAuthRoute && session) throw redirect(303, '/dashboard');
+
+  return resolve(event);
+};
+
+export const handle = sequence(supabaseHandle, authGuard);
+
+[build]import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+import adapter from '@sveltejs/adapter-netlify';<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#13110F"/>
+  <text x="32" y="42" font-family="Georgia,serif" font-size="32" font-style="italic" font-weight="500" fill="#D4A05C" text-anchor="middle">l</text>
+</svg>
+
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+/** @type {import('@sveltejs/kit').Config} */{
+  "name": "lifeos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-netlify": "^4.3.5",
+    "@sveltejs/kit": "^2.8.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "svelte": "^5.1.0",
+    "vite": "^5.4.10"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.1",
+    "@supabase/supabase-js": "^2.45.4"
+  }
+}
+
+const config = {
+  preprocess: vitePreprocess(),
+  kit: {
+    adapter: adapter({
+      edge: false,
+      split: false
+    })
+  }
+};
+
+export default config;
+
+export default defineConfig({
+  plugins: [sveltekit()]
+});
+
+node_modules/
+.svelte-kit/
+build/
+.netlify/
+.env
+.env.local
+.DS_Store
+*.log
+
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[functions]
+  node_bundler = "esbuild"
+
+  command = "npm run build"
+  publish = "build"
+
+[functions]
+  node_bundler = "esbuild"
+
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [sveltekit()]
+});
+
+node_modules/
+.svelte-kit/
+build/
+.netlify/
+.env
+.env.local
+.DS_Store
+*.log
+
+```node_modules/
+.svelte-kit/
+build/
+.netlify/
+.env
+.env.local
+.DS_Store
+*.log
+
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[functions]
+  node_bundler = "esbuild"
+
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [sveltekit()]
+});
+
+src/# Copy these names into Netlify → Site settings → Environment variables.
+# Never put real values in this file. Never commit a .env with real values.
+
+PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Server-side secrets (never exposed to the browser):
+ANTHROPIC_API_KEY=sk-ant-...
+WHOOP_CLIENT_ID=your-whoop-client-id
+WHOOP_CLIENT_SECRET=your-whoop-client-secret
+
+# Set this to your deployed URL once Netlify gives you one.
+# For local dev, http://localhost:5173
+PUBLIC_APP_URL=http://localhost:5173
+
+├─ app.css                  # Design tokens & global styles
+├─ app.html                 # HTML shell, fonts
+├─ hooks.server.js          # Supabase server client + auth guard
+├─ lib/
+│  └─ sports.js             # Sport definitions (extend this to add sports)
+└─ routes/
+   ├─ +page.svelte          # Landing page
+   ├─ (auth)/
+   │   ├─ login/            # Sign in
+   │   └─ signup/           # Create account
+   ├─ (app)/                # Everything behind auth
+   │   ├─ dashboard/        # Today overview
+   │   ├─ workouts/         # List + new workout
+   │   ├─ metrics/          # Body metrics (weight, BF%, RHR, HRV)
+   │   ├─ goals/            # Stub — built in Stage 4
+   │   └─ coach/            # Stub — built in Stage 3
+   └─ auth/                 # OAuth callback endpoints
+```
+
+---
+
+## Deploy in 6 steps
+
+You don't need a terminal. Everything below happens in a browser.
+
+### 1 · Push this code to GitHub
+
+You have two options. **A** is easier if you're new to Git.
+
+**A. GitHub web upload**
+1. Go to **https://github.com/new** → name it `lifeos` → **Private** → **Create repository**.
+2. On the empty repo page, click **uploading an existing file**.
+3. Drag every file and folder from this project (except `node_modules/` if it exists — it shouldn't) into the upload area.
+4. Commit message: `initial scaffold` → **Commit changes**.
+
+**B. StackBlitz (recommended once set up — gives you live preview)**
+1. Go to **https://stackblitz.com** → sign in with GitHub.
+2. **New project → SvelteKit** (or import this zip via the UI).
+3. Drag-drop all files in. StackBlitz will install dependencies automatically.
+4. Click the **Connect Repository** button → choose `lifeos`. From now on, "Commit" pushes to GitHub.
+
+### 2 · Connect Netlify
+
+1. Go to **https://app.netlify.com** → **Add new site → Import an existing project → GitHub**.
+2. Pick the `lifeos` repo.
+3. Build settings should auto-fill (build command `npm run build`, publish directory `build`). If not, set them.
+4. **Do not deploy yet** — click "Add environment variables" first, or go to **Site settings → Environment variables** after the first failed deploy.
+
+### 3 · Set environment variables in Netlify
+
+Add these (Site settings → Environment variables → Add variable). Use the values from your Supabase, Whoop, and Anthropic accounts (the **rotated** ones).
+
+| Name | Value |
+|---|---|
+| `PUBLIC_SUPABASE_URL` | `https://quganjzukmadvblxhbjx.supabase.co` |
+| `PUBLIC_SUPABASE_ANON_KEY` | _your rotated anon key_ |
+| `PUBLIC_APP_URL` | _your Netlify URL, e.g. `https://lifeos-xyz.netlify.app`_ |
+| `ANTHROPIC_API_KEY` | _your rotated Anthropic key_ |
+| `WHOOP_CLIENT_ID` | `c5b5feda-1bcf-4e2e-b3d5-bc30cb2340e3` |
+| `WHOOP_CLIENT_SECRET` | _your rotated Whoop secret_ |
+
+> The first three are needed for v0.1 to work. The last three are needed in upcoming stages.
+
+After adding variables, click **Deploys → Trigger deploy → Deploy site**.
+
+### 4 · Configure Supabase to allow your Netlify URL
+
+1. In Supabase → **Authentication → URL Configuration**.
+2. **Site URL**: your Netlify URL (e.g. `https://lifeos-xyz.netlify.app`).
+3. **Redirect URLs**: add both your Netlify URL and `http://localhost:5173` (so you can run it locally later).
+4. Save.
+
+### 5 · Try it
+
+1. Visit your Netlify URL.
+2. Click **Get started**, create an account.
+3. Confirm via the email Supabase sends.
+4. Sign in → log a workout. You should see it appear on the dashboard.
+
+### 6 · Add the live URL to Whoop
+
+1. **https://developer.whoop.com** → your app → **Redirect URLs** → add `https://YOUR-NETLIFY-URL/auth/whoop/callback`.
+2. We'll wire this up in the next stage.
+
+---
+
+## What's next
+
+Once you confirm v0.1 works, come back and we'll build:
+
+- **Stage 2** — Workout charts, calendar view, PRs detection (small visual upgrades on what already exists)
+- **Stage 3** — Claude-powered weekly review (the AI coach reads your week and writes a debrief)
+- **Stage 4** — Whoop OAuth + nightly sync (recovery & HRV inform the coach)
+- **Stage 5** — Goals (outcome + process, with AI-suggested plans)
+- **Stage 6** — Diet & recipes
+- **Stage 7** — Calendar, tasks, life events
+- **Stage 8** — Cross-domain synthesis ("how did sleep affect my running pace this month?")
+
+---
+
+## Local development (optional, for later)
+
+If you ever want to run this on your own machine:
+
+1. Install Node.js LTS from **https://nodejs.org**.
+2. Open the project folder in VS Code.
+3. Open the terminal in VS Code (View → Terminal).
+4. Run `npm install` then `npm run dev`.
+5. Create a `.env` file in the project root with the same variables as Netlify.
+
+But for now: StackBlitz + Netlify means you never touch a terminal.
